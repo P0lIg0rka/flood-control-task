@@ -45,6 +45,7 @@ func (fc FloodControler) Check(ctx context.Context, userID int64) (bool, error) 
 		// Сразу добавил элемент в конец очереди, чтобы не делать доп проверку на число элементов в массиве в условии цикла
 		// Проверка внутри цикла так же не нужна так как последний элемент = now, a now - now = 0, что не может быть больше чем fc.n
 		// Значит в цикл я зайду с хотя бы двумя элементами в слайсе
+		nowUser = fc.controler[userID]
 		nowUser.queue = append(nowUser.queue, now)
 		for now-nowUser.queue[0] > fc.n {
 			nowUser.queue = nowUser.queue[1:]
