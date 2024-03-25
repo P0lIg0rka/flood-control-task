@@ -13,7 +13,7 @@ type userInfo struct {
 }
 
 type FloodControler struct {
-	mu        *sync.Mutex
+	mu        sync.Mutex
 	n, k      int
 	controler map[int64]*userInfo
 }
@@ -23,7 +23,7 @@ func (fc FloodControler) Check(ctx context.Context, userID int64) (bool, error) 
 	case <-ctx.Done():
 		return false, ctx.Err()
 	default:
-		if fc.n >= 0 && fc.k >= 0 {
+		if fc.n < 0 || fc.k < 0 {
 			return false, errors.New("n and k cannot be negative")
 		}
 
@@ -33,7 +33,7 @@ func (fc FloodControler) Check(ctx context.Context, userID int64) (bool, error) 
 		fc.mu.Lock()
 		nowUser, ok := fc.controler[userID]
 		if !ok {
-			nowUser = &userInfo{done: make(chan struct{})}
+			nowUser = &userInfo{done: make(chan struct{}, 1)}
 		}
 		fc.mu.Unlock()
 
@@ -49,10 +49,17 @@ func (fc FloodControler) Check(ctx context.Context, userID int64) (bool, error) 
 		for now-nowUser.queue[0] > fc.n {
 			nowUser.queue = nowUser.queue[1:]
 		}
-
 		if len(nowUser.queue) >= fc.k {
 			return true, nil
 		}
 		return false, nil
+	}
+}
+
+func CreateFC(n int, k int) *FloodControler {
+	return &FloodControler{
+		n:         n,
+		k:         k,
+		controler: make(map[int64]*userInfo),
 	}
 }
